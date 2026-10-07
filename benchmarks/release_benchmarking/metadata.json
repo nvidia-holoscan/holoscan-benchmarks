@@ -1,0 +1,45 @@
+{
+	"benchmark": {
+		"name": "Holoscan Release Benchmarking",
+		"description": "Reproducible benchmarking workflow to evaluate HoloHub performance with a Holoscan SDK release.",
+		"authors": [
+			{
+				"name": "Holoscan Team",
+				"affiliation": "NVIDIA"
+			}
+		],
+		"version": "0.1.0",
+		"changelog": {
+			"0.1.0": "Initial Release"
+		},
+		"holoscan_sdk": {
+			"minimum_required_version": "2.3.0",
+			"tested_versions": [
+				"2.3.0", "2.6.0", "3.0.0", "3.3.0"
+			]
+		},
+		"platforms": [
+			"x86_64",
+			"aarch64"
+		],
+		"tags": ["Benchmarking", "Performance"],
+		"ranking": 3,
+		"requirements": {
+			"applications": [
+				{
+					"name": "Endoscopy Tool Tracking"
+				},
+				{
+					"name": "Holoscan Flow Benchmarking"
+				},
+				{
+					"name": "Multi-AI Ultrasound"
+				}
+			]
+		},
+		"run": {
+			"command": "bash <holohub_app_source>/run_benchmarks.sh",
+			"workdir": "holohub_root"
+		}
+	}
+}
