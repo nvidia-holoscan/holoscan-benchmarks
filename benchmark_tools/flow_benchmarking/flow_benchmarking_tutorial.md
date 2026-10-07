@@ -25,6 +25,10 @@ the end-to-end latency of Holoscan applications.
 The Holoscan flow benchmarking in Holohub leverages the data flow
 tracking of the Holoscan SDK.
 
+For setup and instrumentation, start with the [tool guide](README.md).
+The commands below use `HOLOSCAN_BENCHMARKS_ROOT` as described there; HoloHub
+application launches run from the HoloHub checkout.
+
 ## Introduction to the Holoscan Flow Benchmarking
 
 Holoscan flow benchmarking helps with automating the benchmarking
@@ -32,7 +36,7 @@ process and generating necessary log files which are analyzed later. In
 this article, we demonstrate how to use Holoscan flow benchmarking to
 evaluate different configurations, applications and schedulers. In a
 nutshell, there are four steps to perform Holoscan flow benchmarking
-which are [summarized here](https://github.com/nvidia-holoscan/holohub/tree/main/benchmarks/holoscan_flow_benchmarking/README.md).
+which are [summarized here](./README.md).
 Following is a high-level overview:
 
 1. **Patching an application:** In the first step, we patch a Holoscan application to turn on data flow tracking.
@@ -70,8 +74,8 @@ evaluate performance of running up to 5 instances of the endoscopy tool
 tracking application concurrently.
 
 ```bash
-$ python tutorials/benchmarking/benchmark.py -a endoscopy_tool_tracking
---sched greedy -i <Number of Instances> -r 10 -m 1000 -d
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/benchmark.py" -a endoscopy_tool_tracking \
+--sched greedy -i <Number of Instances> -r 10 -m 1000 -d \
 endoscopy_<Number of Instance>
 ```
 
@@ -93,9 +97,9 @@ end-to-end latencies of the above experiment, the following command
 could be used:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/analyze.py --avg -g
-endoscopy_1/logger* Instance-1 -g endoscopy_2/logger* Instance-2 -g
-endoscopy_3/logger* Instance-3 -g endoscopy_4/logger* Instance-4 -g
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/analyze.py" --avg -g \
+endoscopy_1/logger* Instance-1 -g endoscopy_2/logger* Instance-2 -g \
+endoscopy_3/logger* Instance-3 -g endoscopy_4/logger* Instance-4 -g \
 endoscopy_5/logger* Instance-5
 ```
 
@@ -117,9 +121,9 @@ Appending the `analyze.py` command with the `--save-csv` parameter enables
 saving the results in an `avg_values.csv` file in CSV format:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/analyze.py --avg -g
-endoscopy_1/logger* Instance-1 -g endoscopy_2/logger* Instance-2 -g
-endoscopy_3/logger* Instance-3 -g endoscopy_4/logger* Instance-4 -g
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/analyze.py" --avg -g \
+endoscopy_1/logger* Instance-1 -g endoscopy_2/logger* Instance-2 -g \
+endoscopy_3/logger* Instance-3 -g endoscopy_4/logger* Instance-4 -g \
 endoscopy_5/logger* Instance-5 --save-csv
 ```
 
@@ -171,8 +175,8 @@ example, the final command for GPU utilization monitoring looks like
 below:
 
 ```bash
-$ python tutorials/benchmarking/benchmark.py -a
-endoscopy_tool_tracking --sched greedy -i <Number of Instances>
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/benchmark.py" -a \
+endoscopy_tool_tracking --sched greedy -i <Number of Instances> \
 -r 10 -m 1000 -d endoscopy_<Number of Instance> -u
 ```
 
@@ -181,10 +185,10 @@ in a CSV file (`avg_gpu_utilization_values.csv`) using the `-u
 --save-csv` parameters:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/analyze.py -g
-endoscopy_1/logger* Instance-1 -u endoscopy_1/gpu*
-Instance-1-GPUUtil -u endoscopy_2/gpu* Instance-2-GPUUtil -u
-endoscopy_3/gpu* Instance-3-GPUUtil -u endoscopy_4/gpu*
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/analyze.py" -g \
+endoscopy_1/logger* Instance-1 -u endoscopy_1/gpu* \
+Instance-1-GPUUtil -u endoscopy_2/gpu* Instance-2-GPUUtil -u \
+endoscopy_3/gpu* Instance-3-GPUUtil -u endoscopy_4/gpu* \
 Instance-4-GPUUtil -u endoscopy_5/gpu* Instance-5-GPUUtil --save-csv
 ```
 
@@ -232,8 +236,8 @@ end-to-end latencies of the first path for the experiment with 1
 instance:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/analyze.py --draw-cdf
-single_path_cdf.png -g endoscopy_1/logger* MyCustomGroup
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/analyze.py" --draw-cdf \
+single_path_cdf.png -g endoscopy_1/logger* MyCustomGroup \
 --no-display-graphs
 ```
 
@@ -255,12 +259,12 @@ the `analyze.py` script. For example, we can run the following two
 commands to run two different applications under same settings:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/benchmark.py -a
-endoscopy_tool_tracking -r 10 -i 1 -m 1000 --sched greedy -d
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/benchmark.py" -a \
+endoscopy_tool_tracking -r 10 -i 1 -m 1000 --sched greedy -d \
 endoscopy_outputs
 
-$ python benchmarks/holoscan_flow_benchmarking/benchmark.py -a
-ultrasound_segmentation -r 10 -i 1 -m 1000 --sched greedy -d
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/benchmark.py" -a \
+ultrasound_segmentation -r 10 -i 1 -m 1000 --sched greedy -d \
 ultrasound_outputs
 ```
 
@@ -270,8 +274,8 @@ files in two different directories, `endoscopy_outputs` and
 latencies with the following analyze.py command:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/analyze.py --max -g
-endoscopy_outputs/logger* "Endoscopy Tool Tracking" -g
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/analyze.py" --max -g \
+endoscopy_outputs/logger* "Endoscopy Tool Tracking" -g \
 ultrasound_outputs/logger* "Ultrasound Segmentation"
 ```
 
@@ -293,8 +297,8 @@ running an application only on a specific GPU. We can run the following
 command:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/benchmark.py -a
-endoscopy_tool_tracking -r 10 -i 1 -m 1000 --sched greedy -d
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/benchmark.py" -a \
+endoscopy_tool_tracking -r 10 -i 1 -m 1000 --sched greedy -d \
 endoscopy_outputs_<GPU Name> -g <Corresponding GPU UUID>
 ```
 
@@ -310,7 +314,7 @@ The results of the above experiment can be compared using the following
 command:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/analyze.py <insert
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/analyze.py" <insert \
 your metrics options> -g endoscopy_outputs_<GPU Name>/logger* "GPU1" -g endoscopy_outputs_<GPU Name>/gpu* "GPU2"
 ```
 
@@ -325,13 +329,13 @@ scheduler](https://docs.nvidia.com/holoscan/sdk-user-guide/components/schedulers
 and the [Event-based Scheduler](https://docs.nvidia.com/holoscan/sdk-user-guide/components/schedulers#event-based-scheduler):
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/benchmark.py -a
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/benchmark.py" -a \
 endoscopy_tool_tracking -r 10 -i 1 -m 1000 --sched greedy -d endoscopy_greedy_outputs
 
-$ python benchmarks/holoscan_flow_benchmarking/benchmark.py -a
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/benchmark.py" -a \
 endoscopy_tool_tracking -r 10 -i 1 -m 1000 --sched multithread -w 5 -d endoscopy_multithread_outputs
 
-$ python benchmarks/holoscan_flow_benchmarking/benchmark.py -a
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/benchmark.py" -a \
 endoscopy_tool_tracking -r 10 -i 1 -m 1000 --sched eventbased -w 5 -d endoscopy_eventbased_outputs
 ```
 
@@ -339,7 +343,7 @@ Then, the results can be analyzed and compared using the following
 command:
 
 ```bash
-$ python benchmarks/holoscan_flow_benchmarking/analyze.py <insert
+python "$HOLOSCAN_BENCHMARKS_ROOT/benchmark_tools/flow_benchmarking/analyze.py" <insert \
 your metrics options> -g endoscopy_greedy_outputs/logger* "Endoscopy (Greedy)" -g endoscopy_multithread_outputs/logger* "Endoscopy (Multithread)" -g endoscopy_eventbased_outputs/logger* "Endoscopy (Event-based)"
 ```
 
@@ -362,8 +366,7 @@ curve to be as small as possible.
 
 ## Conclusion
 
-Holoscan flow benchmarking is currently available for four HoloHub C++
-applications:
+The tutorial examples use HoloHub applications, including:
 
 - endoscopy_tool_tracking
 
@@ -373,13 +376,12 @@ applications:
 
 - ultrasound_segmentation
 
-We plan to add Holoscan flow benchmarking for other C++ and Python
-sample applications for HoloHub in the future.
+C++ and Python instrumentation is available in the [tool guide](README.md).
+Use its direct-instrumentation workflow to measure your own application.
 
 Holoscan flow benchmarking allows developers to evaluate the performance
 of Holoscan applications at scale. The article demonstrates a few common
 use-cases. Please let us know how you are leveraging Holoscan flow
 benchmarking and if you are experiencing any gaps or blockers for your
-applications. Please feel free to [file issues on Github](https://github.com/nvidia-holoscan/holohub/issues)
-or [contribute](https://github.com/nvidia-holoscan/holohub/blob/main/CONTRIBUTING.md) directly to
-HoloHub.
+applications. See the [contributing guide](../../CONTRIBUTING.md) to contribute benchmarks
+or improvements to these tools.

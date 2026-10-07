@@ -1,18 +1,34 @@
-# Holoscan Benchmarks
+# Benchmark catalog
 
-This directory contains applications, tools, and instructions to help measure
-the performance of pipelines built with Holoscan SDK.
+This directory contains benchmark workloads, experiment scenarios, and published
+results for Holoscan applications and operators. Each project has its own README
+with its measurement procedure and environment requirements.
 
-## Contents
+| Benchmark | What it measures | Available here |
+| --- | --- | --- |
+| [Model benchmarking](model_benchmarking/README.md) | Parallel inference workloads on a video stream | C++ and Python applications and configuration |
+| [Real-time thread scheduling](realtime_threads_benchmarking/README.md) | Operator timing under competing CPU workloads | C++ benchmark, plotting script, and example results |
+| [Green context benchmarking](green_context_benchmarking/README.md) | CUDA kernel launch-start and execution timing under GPU contention | C++/CUDA benchmark and reported results |
+| [Exclusive display](exclusive_display/README.md) | Application latency with exclusive and default display modes | Published study and plots |
+| [Release benchmarking](release_benchmarking/README.md) | Endoscopy Tool Tracking and Multi-AI Ultrasound latency across release configurations | HoloHub scenario runner, report templates, and published reports |
 
-Any of the following may be covered under a benchmark project:
+## Read results
 
-- Holoscan SDK performance;
-- HoloHub application performance;
-- Tools for benchmarking non-Holohub Holoscan SDK applications.
+Start with a project's README or one of the
+[release reports](release_benchmarking/README.md#previous-holoscan-release-benchmark-reports).
+Reading reports does not require the SDK or a GPU. Use each report's platform,
+SDK version, application configuration, and methodology when interpreting its
+measurements.
 
-## Additional Details
+## Run a benchmark
 
-Benchmarks in this directory may cover any or multiple platforms supported by Holoscan, including x86_64 and IGX platforms.
+Follow the selected project's README for hardware, SDK, data, build, and runtime
+requirements. HoloHub commands require a separate HoloHub checkout; the
+[repository README](../README.md#build-and-run) also shows a standalone CMake
+build example.
 
-Any benchmark project reporting performance statistics must supply contextual information, including platform details, Holoscan SDK versioning, and other application workflow information.
+## Benchmark your own code or contribute
+
+Use the shared [benchmark tools](../benchmark_tools/README.md) to measure your
+own application or operator. See [CONTRIBUTING.md](../CONTRIBUTING.md) for where
+to put a new benchmark and what information to include with its results.

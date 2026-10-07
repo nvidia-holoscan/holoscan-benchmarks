@@ -2,14 +2,28 @@
 
 Benchmarks, analysis tools, and published results for the NVIDIA Holoscan SDK.
 
-Each benchmark lives under [`benchmarks/`](benchmarks/) and documents its
-requirements, usage, and measurement procedures in its own README.
+Benchmark workloads, scenarios, and published results live under
+[`benchmarks/`](benchmarks/README.md). Reusable measurement and analysis tools
+live under [`benchmark_tools/`](benchmark_tools/README.md).
+
+## Start here
+
+| What you want to do | Where to start |
+| --- | --- |
+| Read published results | [Benchmark catalog](benchmarks/README.md); no installation is required to read reports. |
+| Run an existing benchmark | Choose a benchmark in the [catalog](benchmarks/README.md), then follow its README. |
+| Benchmark your own application or operator | [Flow benchmarking guide](benchmark_tools/flow_benchmarking/README.md#benchmark-your-own-application) |
+| Contribute a benchmark or improve the tools | [Contributing guide](CONTRIBUTING.md) |
 
 ## Setup
 
 To run benchmarks, use a Linux environment with the Holoscan SDK and the
 hardware, CUDA version, models, and data required by the selected benchmark.
 Check its README for supported versions and any additional dependencies.
+
+Some benchmark guides describe HoloHub workflows. Commands beginning with
+`./holohub` require a separate HoloHub checkout and its application and data
+setup. This repository does not include that launcher.
 
 For workflows that need CLI support, install
 [Holoscan CLI](https://github.com/nvidia-holoscan/holoscan-cli) with pip.
@@ -53,13 +67,13 @@ if needed, then install the analysis dependencies:
 
 ```bash
 python -m pip install numpy matplotlib
-python benchmarks/holoscan_flow_benchmarking/analyze.py --help
+python benchmark_tools/flow_benchmarking/analyze.py --help
 ```
 
-Collecting new flow measurements also requires `holoscan-cli`, the packages
-in [requirements.txt](benchmarks/holoscan_flow_benchmarking/requirements.txt),
-and the application and system dependencies described in the
-[flow benchmarking README](benchmarks/holoscan_flow_benchmarking/README.md).
+To collect new measurements, follow the
+[flow benchmarking guide](benchmark_tools/flow_benchmarking/README.md) for
+application instrumentation, HoloHub runner setup, and optional monitoring and
+visualization dependencies.
 
 ## Local checks
 
@@ -68,7 +82,7 @@ They do not require a GPU, the Holoscan SDK, or third-party Python packages:
 
 ```bash
 python3 .github/scripts/check.py
-python3 -m unittest discover -s benchmarks/holoscan_flow_benchmarking/tests -v
+python3 -m unittest discover -s benchmark_tools/flow_benchmarking/tests -v
 ```
 
 GitHub Actions runs the same Python, JSON, and shell syntax checks and

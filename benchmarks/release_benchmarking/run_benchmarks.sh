@@ -17,7 +17,7 @@ set -e
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 TOP=$(realpath "${SCRIPT_DIR}/../..")
-FLOW_BENCHMARKING_DIR=${TOP}/benchmarks/holoscan_flow_benchmarking
+FLOW_BENCHMARKING_DIR=${TOP}/benchmark_tools/flow_benchmarking
 
 run_command() {
     local status=0

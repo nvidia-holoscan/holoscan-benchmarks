@@ -4,7 +4,7 @@ This tutorial provides a reproducible workflow for developers to accurately meas
 applications across various SDK releases and different deployment scenarios, from single-application
 to multi-model use cases.
 
-Developers can use the [Holoscan Flow Benchmarking](../holoscan_flow_benchmarking/) tools referenced within this guide to systematically
+Developers can use the [Holoscan Flow Benchmarking](../../benchmark_tools/flow_benchmarking/) tools referenced within this guide to systematically
 analyze performance bottlenecks, optimize execution times, and fine-tune their own applications for
 real-time, low-latency processing.
 
@@ -204,8 +204,8 @@ Multi-AI Ultrasound HoloHub applications, developers utilize underlying
 Holoscan data frame flow tracking tools to similarly measure and analyze performance in custom
 Holoscan applications.
 
-- Refer to the [Holoscan Flow Benchmarking](../holoscan_flow_benchmarking/) project for general
+- Refer to the [Holoscan Flow Benchmarking](../../benchmark_tools/flow_benchmarking/) project for general
 Holoscan performance profiling tools for both C++ and Python applications.
-- Refer to the [Holoscan Flow Benchmarking whitepaper](https://developer.download.nvidia.com/holoscan/Holoscan-Flow-Benchmarking.pdf) and [tutorial](../holoscan_flow_benchmarking/flow_benchmarking_tutorial.md) for a comprehensive overview of pipeline profiling tools.
+- Refer to the [Holoscan Flow Benchmarking whitepaper](https://developer.download.nvidia.com/holoscan/Holoscan-Flow-Benchmarking.pdf) and [tutorial](../../benchmark_tools/flow_benchmarking/flow_benchmarking_tutorial.md) for a comprehensive overview of pipeline profiling tools.
 - Refer to [`run_benchmarks.sh`](./run_benchmarks.sh) for additional examples demonstrating
 performance data collection and reporting with Holoscan Flow Tracking scripts.

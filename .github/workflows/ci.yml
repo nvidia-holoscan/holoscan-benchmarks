@@ -26,4 +26,4 @@ jobs:
       - name: Check Python, JSON, and shell syntax
         run: python .github/scripts/check.py
       - name: Test flow-log parsing
-        run: python -m unittest discover -s benchmarks/holoscan_flow_benchmarking/tests -v
+        run: python -m unittest discover -s benchmark_tools/flow_benchmarking/tests -v
