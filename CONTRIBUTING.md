@@ -15,6 +15,16 @@ documentation, or publish reproducible results.
   Ultrasound scenarios.
 - Keep CI workflows and their repository checks under `.github/`.
 
+Other contributions have a different home:
+
+- Applications go to Holoscan Applications (`nvidia-holoscan/holoscan-applications`).
+- Tutorials go to Holoscan Tutorials (`nvidia-holoscan/holoscan-tutorials`).
+- Reusable operators and Holoscan Modules go to
+  [HoloHub](https://github.com/nvidia-holoscan/holohub).
+- Holoscan CLI changes go to [Holoscan CLI](https://github.com/nvidia-holoscan/holoscan-cli).
+- SDK bugs and feature requests go to the
+  [Holoscan SDK](https://github.com/nvidia-holoscan/holoscan-sdk/issues).
+
 ## Add or update a benchmark
 
 Start with the [benchmark catalog](benchmarks/README.md) and
@@ -64,4 +74,22 @@ execution or performance.
 
 Open a pull request describing the change and the checks you ran. For runtime
 or result changes, include the tested hardware, SDK version, application
-revision, and commands. State which checks could not be run.
+revision, and commands. State which checks could not be run. A pull request is
+accepted once CI passes and a Holoscan maintainer approves it.
+
+## Security-sensitive steps
+
+If a benchmark runs containers as root or privileged, changes host devices or kernel
+settings, opens network ports, or downloads files without checksums, say so in its
+README before the step. Then add the risk to the threat model in
+[SECURITY.md](SECURITY.md).
+
+## Signing your contribution
+
+Every commit must carry a `Signed-off-by` trailer, added by `git commit -s`. Signing off
+certifies the [Developer Certificate of Origin](https://developercertificate.org/): you
+wrote the contribution, or otherwise have the right to submit it under the
+[Apache-2.0 license](LICENSE). Pull requests with unsigned commits are not accepted.
+
+To report a security vulnerability, follow [SECURITY.md](SECURITY.md) instead of opening a
+public issue.
