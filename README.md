@@ -16,12 +16,10 @@ your own measurements.
 | --- | --- |
 | Read published results | [Benchmark catalog](benchmarks/README.md); reports need no SDK or GPU. |
 | Run an existing benchmark | Choose a workload in the [catalog](benchmarks/README.md), then follow its README. |
-| Benchmark your own application or operator | [Flow benchmarking guide](benchmark_tools/flow_benchmarking/README.md#benchmark-your-own-application) |
-| Analyze measurements or create plots | [Measurement and analysis tools](benchmark_tools/README.md) |
+| Measure your own application or operator, analyze logs, or create plots | [Measurement and analysis tools](benchmark_tools/README.md) |
 
-The catalog covers model inference, CPU thread scheduling, CUDA green
-contexts, display latency, and release comparisons. Interpret results using
-each report's hardware, SDK version, workload, and measurement procedure.
+Interpret results using each report's hardware, SDK version, workload, and
+measurement procedure.
 
 ## Getting started
 
@@ -43,36 +41,28 @@ setup. Follow the guide's version-specific instructions for those workflows.
 
 ## Build and run
 
-For a standalone CMake example, build the
-[real-time thread scheduling benchmark](benchmarks/realtime_threads_benchmarking/README.md).
-With a C++17 compiler, CMake 3.20+, and Holoscan SDK 3.5+ installed, run from the
-repository root:
+Follow the selected benchmark's README for its build tools and supported SDK
+versions. For a benchmark with a standalone CMake entry point, adapt these
+commands from the repository root, replacing `<benchmark>` with its directory
+and setting `CMAKE_PREFIX_PATH` to your SDK installation:
 
 ```bash
-cmake -S benchmarks/realtime_threads_benchmarking -B build/realtime \
-  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/nvidia/holoscan
-cmake --build build/realtime -j
-./build/realtime/realtime_thread_benchmark --help
+cmake -S benchmarks/<benchmark> -B build/<benchmark> \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/path/to/holoscan/install
+cmake --build build/<benchmark> --parallel
 ```
 
-Set `CMAKE_PREFIX_PATH` to your SDK installation. Follow the benchmark's README
-to choose a workload, collect measurements, and plot results. Other benchmarks
-have their own build and run instructions.
+Add any options required by the benchmark, then use its documented run command
+to configure the workload and collect measurements. Benchmarks using other
+build systems provide their own instructions.
 
 ## Analyze existing logs
 
-Flow logs can be analyzed without a GPU or the SDK. From the repository root:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install numpy matplotlib
-python benchmark_tools/flow_benchmarking/analyze.py --help
-```
-
-See the [analysis examples](benchmark_tools/README.md#analyze-existing-logs)
-for latency statistics and plots. To collect new logs from your own code, follow
-the [application instrumentation guide](benchmark_tools/flow_benchmarking/README.md#benchmark-your-own-application).
+Use the [measurement and analysis tools](benchmark_tools/README.md) to turn
+recorded measurements into statistics and plots. Follow the selected tool's
+documentation for supported input formats, dependencies, and commands. To
+collect new measurements, follow its instrumentation instructions and the
+application's runtime requirements.
 
 ## Related projects and contributions
 
