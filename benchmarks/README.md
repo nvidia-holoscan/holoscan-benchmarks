@@ -1,34 +1,21 @@
-# Benchmark catalog
+# Benchmarks for Holoscan SDK 5.x
 
-This directory contains benchmark workloads, experiment scenarios, and published
-results for Holoscan applications and operators. Each project has its own README
-with its measurement procedure and environment requirements.
+This directory is for benchmarks of Holoscan SDK 5.x applications and operators,
+using SDK 5.0.0 as the baseline. Benchmarks evaluate latency, throughput,
+resource utilization, and the effects of runtime configuration through
+reproducible workloads.
 
-| Benchmark | What it measures | Available here |
-| --- | --- | --- |
-| [Model benchmarking](model_benchmarking/README.md) | Parallel inference workloads on a video stream | C++ and Python applications and configuration |
-| [Real-time thread scheduling](realtime_threads_benchmarking/README.md) | Operator timing under competing CPU workloads | C++ benchmark, plotting script, and example results |
-| [Green context benchmarking](green_context_benchmarking/README.md) | CUDA kernel launch-start and execution timing under GPU contention | C++/CUDA benchmark and reported results |
-| [Exclusive display](exclusive_display/README.md) | Application latency with exclusive and default display modes | Published study and plots |
-| [Release benchmarking](release_benchmarking/README.md) | Endoscopy Tool Tracking and Multi-AI Ultrasound latency across release configurations | HoloHub scenario runner, report templates, and published reports |
+Each benchmark should document what it measures, its hardware and software
+requirements, required models and input data, and build and run instructions.
+Measurement procedures should explain warm-up, sample counts, repetitions, and
+how to interpret the results. Compare measurements in the context of their
+hardware, SDK version, and workload configuration.
 
-## Read results
+Use the [shared measurement and analysis tools](../benchmark_tools/README.md)
+to instrument workloads, collect timings, and analyze results. Application
+workloads can come from the SDK or
+[Holoscan Applications](https://github.com/nvidia-holoscan/holoscan-applications).
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidance on adding a benchmark.
 
-Start with a project's README or one of the
-[release reports](release_benchmarking/README.md#previous-holoscan-release-benchmark-reports).
-Reading reports does not require the SDK or a GPU. Use each report's platform,
-SDK version, application configuration, and methodology when interpreting its
-measurements.
-
-## Run a benchmark
-
-Follow the selected project's README for hardware, SDK, data, build, and runtime
-requirements. HoloHub commands require a separate HoloHub checkout; the
-[repository README](../README.md#build-and-run) also shows a standalone CMake
-build example.
-
-## Benchmark your own code or contribute
-
-Use the shared [benchmark tools](../benchmark_tools/README.md) to measure your
-own application or operator. See [CONTRIBUTING.md](../CONTRIBUTING.md) for where
-to put a new benchmark and what information to include with its results.
+For benchmarks targeting Holoscan SDK releases before 5.x, see the
+[HoloHub archive-4x branch](https://github.com/nvidia-holoscan/holohub/tree/archive-4x).

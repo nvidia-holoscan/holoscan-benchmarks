@@ -1,7 +1,8 @@
 # Benchmark tools
 
-Reusable collection and analysis tools for Holoscan SDK 5.0.0. Workload-specific
-benchmarks and published results are in the [benchmark catalog](../benchmarks/README.md).
+Reusable collection and analysis tools for Holoscan SDK 5.x, using 5.0.0 as the
+baseline. Workload-specific benchmarks belong in the
+[benchmark directory](../benchmarks/README.md).
 
 | Purpose | Tool |
 | --- | --- |
@@ -17,6 +18,5 @@ Start with the [SDK 5 flow tracking guide](flow_benchmarking/README.md#quick-sta
 or [instrument your own application](flow_benchmarking/README.md#benchmark-your-own-application).
 Analysis also reads legacy SDK logs and needs no GPU or SDK installation.
 
-The SDK 4 inheritance and source-patching helpers have been removed. SDK 5 graphs
-must explicitly record and propagate per-message timing; the runner does not
-change operators or scheduling. See the guide's migration and timing limits.
+SDK 5 graphs must explicitly record and propagate per-message timing; the runner
+does not change operators or scheduling. See the guide's migration and timing limits.

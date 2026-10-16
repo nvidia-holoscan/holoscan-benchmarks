@@ -23,129 +23,77 @@ security bulletin when appropriate.
 
 ## Supported Versions
 
-Security fixes are applied to the current `main` branch. C++ benchmarks declare
-their Holoscan SDK floor in CMake: model benchmarking requires Holoscan 1.0 or
-newer, real-time thread benchmarking requires 3.5 or newer, and green-context
-benchmarking requires 3.6 or newer. The repository README's standalone build
-example uses Holoscan SDK 3.5 or newer.
+Security fixes are applied to the current `main` branch. The shared measurement
+and analysis tools target Holoscan SDK 5.x, using 5.0.0 as the baseline. Their
+C++ examples require SDK 5.0 or newer. The `benchmarks/` directory currently
+contains no runnable workloads; legacy benchmarks and release reports were
+removed during the SDK 5 compatibility review.
 
 ## Security Architecture and Context
 
-Holoscan Benchmarks is a set of benchmark applications, measurement helpers, and
-published results for the NVIDIA Holoscan SDK. Workloads live under
-`benchmarks/`. Reusable instrumentation and log analysis live under
-`benchmark_tools/flow_benchmarking/`. Published plots live under
-`benchmarks/release_benchmarking/release/`.
-
-This project operates at the benchmark-application and local CLI-tool level. Its
-primary security responsibility is to keep measurement runs, patched application
-sources, flow logs, and result files inside the directories and devices the
-operator selected. It does not authenticate users, expose a network service, or
-ship a packaged runtime.
+Holoscan Benchmarks provides local measurement and analysis tools under
+`benchmark_tools/flow_benchmarking/`. Its primary security responsibility is to
+keep measurement runs, flow logs, and result files inside the directories the
+operator selected. It does not authenticate users, expose a network service,
+or ship a packaged runtime.
 
 The principal security boundaries are:
 
-- `benchmark.py` launches a HoloHub application. With no `--run-command` it
-  builds `./holohub run <application>`; with `--run-command` it passes that
-  string to `subprocess.run` with `shell=True`. It also selects GPUs through
-  `CUDA_VISIBLE_DEVICES` and, when `--monitor_gpu` is set, samples utilization
-  with `nvitop`.
-- `patch_application.sh` and `patch_python_sources.py` rewrite C++ and Python
-  sources under a caller-supplied directory, inserting `benchmark.hpp` or
-  `BenchmarkedApplication` and leaving `.bak` copies beside the originals.
-  `benchmark.py` chooses those directories from HoloHub project metadata.
-- `benchmark.hpp` and `benchmarked_application.py` read
-  `HOLOSCAN_NUM_SOURCE_MESSAGES`, `HOLOSCAN_SCHEDULER`, worker-thread counts,
-  and `HOLOSCAN_FLOW_TRACKING_LOG_FILE`, then enable Holoscan flow logging.
-- `log_parser.py` and `analyze.py` read those logs from paths given on the
-  command line and write CSV and plot files in the working directory.
-- `realtime_thread_benchmark` requests `SCHED_DEADLINE`, `SCHED_FIFO`, or
-  `SCHED_RR` through Holoscan `add_realtime`, pins a CPU, and can set FIFO
-  priority 99. Its README runs the container `--as-root` with Docker
-  `--privileged`. It writes JSON under `--output` (default
-  `/tmp/benchmark_plots/realtime_thread_benchmark_results.json`) and launches
-  `plot_results.py` with `posix_spawnp`.
-- `green_context_benchmark` links CUDA, CUPTI, and CCCL. `cupti_profiler.hpp`
-  subscribes to CUPTI runtime callbacks and kernel activity. The benchmark
-  README runs that container as root.
-- `model_benchmarking` opens a caller-supplied data directory and model file
-  (default ONNX under the ultrasound-segmentation data path), loads
-  `model_benchmarking.yaml` (default V4L2 device `/dev/video6`, TensorRT
-  backend), and captures with `V4L2VideoCaptureOp`.
-- `benchmarks/release_benchmarking/Dockerfile` extends `ARG BASE_IMAGE` (a
-  Holoscan NGC image in the documented workflow), copies the HoloHub launcher
-  from the build context, and installs apt packages plus
-  `benchmark_tools/flow_benchmarking/requirements.txt` and `jinja2-cli`.
-- GitHub Actions (`.github/workflows/ci.yml`) checks out the repo with
-  `persist-credentials: false` and `contents: read`, then runs syntax checks
-  and log-parser unit tests. That job does not install the requirements file.
+- `benchmark.py` executes the operator's required `--run-command` with
+  `subprocess.Popen(..., shell=True)`. It inherits the environment, supplies
+  per-instance logging and message-count variables, and optionally selects
+  GPUs through `CUDA_VISIBLE_DEVICES`. It does not rewrite application sources.
+- The runner creates trial metadata and console files exclusively, checks
+  collected flow logs, and terminates application process groups on failure,
+  timeout, or cancellation. The application must honor the requested message
+  limit and implement its own instrumentation.
+- `flow_tracking.hpp` and `flow_tracking.py` write application-provided timing
+  records to the selected file. The SDK integration examples and correlation
+  helper carry measurement provenance through SDK 5 graphs.
+- `log_parser.py`, `analyze.py`, and plotting tools read caller-selected logs
+  and write statistics, CSV, graph, and image files. Analysis accepts SDK 5
+  JSONL records and legacy flow logs.
+- With `--monitor_gpu`, `benchmark.py` samples physical GPU utilization through
+  the optional `nvitop` package and NVML.
+- GitHub Actions checks source syntax, installs the analysis requirements, and
+  runs collection and analysis tests. Checkout uses `persist-credentials: false`
+  with `contents: read`. CI does not qualify GPU workloads or performance.
 
 ### Threat Model
 
-1. **Privileged real-time benchmark container:** `realtime_thread_benchmark.cpp`
-   calls `add_realtime` for `SCHED_DEADLINE`, `SCHED_FIFO`, or `SCHED_RR` and
-   documents Docker `--privileged` plus `--as-root`, which grants
-   `CAP_SYS_NICE` and `CAP_SYS_ADMIN`. A container started that way can change
-   host scheduling and is not limited to the benchmark process.
-2. **Command execution from `--run-command` and HoloHub metadata:**
-   `benchmark.py` `run_command` invokes `subprocess.run(..., shell=True)`. The
-   default command interpolates `--holohub-application` and `--language`.
-   `--run-command` replaces it with an arbitrary shell string, and the child
-   inherits the benchmark environment, including `CUDA_VISIBLE_DEVICES`.
-3. **Source rewriting outside this repository:** `patch_python_sources.py`
-   walks a directory and rewrites every `.py` file, and `patch_application.sh`
-   runs `sed` on every `.cpp` file that declares `holoscan::Application`.
-   `benchmark.py` selects those directories from `holoscan-cli` project
-   metadata and `holohub_root`. A metadata path or directory argument that
-   points at an unintended tree modifies that tree in place.
-4. **Caller-selected devices, models, and flow logs:** `model_benchmarking`
-   loads the YAML path, `--data` directory, and `--model-name` the operator
-   passes, and opens the V4L2 device named in that YAML. `log_parser.py` reads
-   a log path and converts timestamp fields with `int` without a size limit.
-   Those inputs are trusted local paths; a substituted device node, model
-   file, or log can consume GPU time, device access, or parser memory inside
-   the benchmark process.
-5. **GPU profiling and process inspection:** `cupti_profiler.hpp` enables CUPTI
-   runtime and concurrent-kernel activity in-process. `benchmark.py` queries
-   NVML through `nvitop.Device` for `--gpu` UUIDs or `Device.all()`. The green
-   context README runs the container as root. Profiling and NVML queries use
-   whatever GPU access that user or container already has.
-6. **Unpinned image-build inputs:** The release-benchmark Dockerfile installs
-   `requirements.txt` (only `PyGObject` is pinned) and `jinja2-cli>=0.8.2`
-   with pip, and installs apt packages including GTK, Graphviz, pandoc, and
-   TeX Live, with no checksums. `BASE_IMAGE` is supplied at build time. A
-   substituted base image, index, or package version becomes part of the local
-   `holohub:release_benchmarking` image before benchmarks run.
+1. **Operator-supplied shell commands:** `--run-command` is an arbitrary shell
+   command and runs with the caller's permissions and inherited environment.
+   Application commands must come from a trusted operator.
+2. **Caller-selected files:** Flow-log parsers, analysis tools, and record writers
+   operate on local paths. Large or malformed input may consume memory or CPU;
+   the tools do not authenticate log producers. Some analysis outputs may
+   replace existing files at the selected destination.
+3. **GPU and process access:** Optional NVML monitoring and SDK applications use
+   the device access already granted to the invoking user or container. The
+   runner can terminate the process groups it starts.
 
 ### Critical Security Assumptions
 
-- The operator controls the host, container runtime, and Docker flags. This
-  repository does not restrict `--privileged`, `--as-root`, device nodes, or
-  GPU access.
-- The Holoscan SDK, CUDA, CUPTI, CCCL, and the NGC base image behave as trusted
-  platform software and enforce their own device and memory contracts.
-- Application names, `--run-command`, patch directories, model and data paths,
-  V4L2 device nodes, YAML files, environment variables, and flow logs are
-  operator configuration, not untrusted network input.
-- Flow-log parsers assume the Holoscan flow-tracking line format. They do not
-  authenticate the log producer.
-- HoloHub metadata returned by `holoscan-cli` names source and build directories
-  the operator intends to patch.
-- The benchmark tools do not listen on the network. Any network use is inside
-  the Holoscan application or base image under test.
+- The operator controls the host, container runtime, application command, device
+  access, environment variables, and input/output paths.
+- The Holoscan SDK and its runtime dependencies are trusted platform software.
+- Applications implement instrumentation correctly; log parsing cannot establish
+  that timestamps faithfully represent the workload or that a requested
+  message limit was honored.
+- The benchmark tools do not listen on the network. Network use belongs to the
+  application under test or to dependency installation.
 - Secrets are supplied by the deployment environment and are not committed to
   this repository. CI does not persist checkout credentials.
-- Third-party Python and apt packages are installed by the operator or by a
-  local image build. They are not vendored in this source tree.
+- Third-party packages are installed by the operator or CI and are not vendored
+  in this source tree.
 
 ## Dependency and Distribution Security
 
-This repository redistributes NVIDIA Apache-2.0 benchmark source and published
-result plots. It does not vendor third-party source trees. Analysis and
-container workflows install third-party packages at build or run time,
-including copyleft components (`nvitop` as published on PyPI, `xdot`,
-`PyGObject`, and apt packages such as pandoc). New or upgraded third-party
-dependencies must have their license and redistribution terms reviewed before
-they are pinned, installed into a published image, or shipped. Components
-distributed with a Holoscan product must follow the applicable NVIDIA Open
-Source Review Board process. There is no `NOTICE` file in this repository.
+This repository redistributes NVIDIA Apache-2.0 measurement and analysis source.
+It does not vendor third-party source trees. Analysis uses NumPy, Matplotlib,
+and pydot; GPU monitoring can use `nvitop`, and graph viewing can use Graphviz
+or `xdot`. New or upgraded third-party dependencies must have their license and
+redistribution terms reviewed before they are pinned, installed into a published
+image, or shipped. Components distributed with a Holoscan product must follow
+the applicable NVIDIA Open Source Review Board process. There is no `NOTICE`
+file in this repository.

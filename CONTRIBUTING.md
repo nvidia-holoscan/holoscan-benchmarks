@@ -1,7 +1,7 @@
 # Contributing
 
-Contributions can add benchmark workloads, improve shared tooling, correct
-documentation, or publish reproducible results.
+Contributions can add validated SDK 5.x benchmark workloads, improve shared
+tooling, or correct documentation. SDK 5.0.0 is the baseline.
 
 ## Where changes belong
 
@@ -10,9 +10,6 @@ documentation, or publish reproducible results.
   measurement procedure together.
 - Put reusable execution, instrumentation, and analysis tools under
   `benchmark_tools/`. Extend the existing flow tools when they fit the task.
-- Keep release scenarios and reports in `benchmarks/release_benchmarking/`.
-  The release suite currently includes Endoscopy Tool Tracking and Multi-AI
-  Ultrasound scenarios.
 - Keep CI workflows and their repository checks under `.github/`.
 
 Other contributions have a different home:
@@ -27,7 +24,7 @@ Other contributions have a different home:
 
 ## Add or update a benchmark
 
-Start with the [benchmark catalog](benchmarks/README.md) and
+Start with the [benchmark directory overview](benchmarks/README.md) and
 [flow benchmarking guide](benchmark_tools/flow_benchmarking/README.md#benchmark-your-own-application).
 You can use the tools on your own application before contributing it here.
 
@@ -41,11 +38,13 @@ Include a README that explains:
    sample counts, repetitions, and any instrumentation overhead.
 5. How to interpret the results and reproduce the reported configuration.
 
-If the application source lives elsewhere, identify its repository and tested
-revision. Include hardware and software details with published measurements.
-Follow neighboring projects' `metadata.json` format when supplying project
-metadata, and add the benchmark to the catalog. Keep temporary logs and build
-outputs out of the contribution.
+Use functionality present in SDK 5.x or Holoscan Applications. If the application
+source lives elsewhere, identify its repository and tested revision. Include
+hardware and software details with measurements. Build and run the benchmark
+and verify that its measurements are valid before registering it in
+`benchmarks/CMakeLists.txt`. Document the workload in its own README.
+Remove unsupported or unverified legacy workloads. Keep temporary logs and
+build outputs out of the contribution.
 
 ## Change shared tools
 

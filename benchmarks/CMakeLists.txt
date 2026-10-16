@@ -13,6 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_holohub_application(model_benchmarking)
-add_holohub_application(realtime_threads_benchmarking)
-add_holohub_application(green_context_benchmarking)
+cmake_minimum_required(VERSION 4.0)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(holoscan_benchmarks LANGUAGES NONE)
+endif()
+
+# No workload has been validated for Holoscan SDK 5.x yet. Keep this entry point
+# usable standalone and through add_subdirectory() without SDK or HoloHub helpers.
+message(STATUS "No validated Holoscan SDK 5.x benchmark targets are registered")
