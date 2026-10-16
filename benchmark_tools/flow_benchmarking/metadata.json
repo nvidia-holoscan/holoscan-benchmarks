@@ -1,35 +1,38 @@
 {
-	"benchmark": {
-		"name": "Holoscan Flow Benchmarking",
-		"description": "This is a benchmarking tool to evaluate the performance of HoloHub and other Holoscan applications.",
-		"authors": [
-			{
-				"name": "Holoscan Team",
-				"affiliation": "NVIDIA"
-			}
-		],
-		"version": "0.1.0",
-		"changelog": {
-			"0.1.0": "Initial Release"
-		},
-		"holoscan_sdk": {
-			"minimum_required_version": "1.0.3",
-			"tested_versions": [
-				"1.0.3"
-			]
-		},
-		"platforms": [
-			"x86_64",
-			"aarch64"
-		],
-		"tags": ["Benchmarking"],
-		"ranking": 3,
-		"requirements": {
-			"python-requirements": [
-				{
-					"filepath": "requirements.txt"
-				}
-			]
-		}
-	}
+  "benchmark": {
+    "name": "Holoscan Flow Benchmarking",
+    "description": "Explicit per-message host flow tracing and analysis for Holoscan SDK 5 Graph applications.",
+    "authors": [
+      {
+        "name": "Holoscan Team",
+        "affiliation": "NVIDIA"
+      }
+    ],
+    "version": "0.2.0",
+    "changelog": {
+      "0.1.0": "Initial Release",
+      "0.2.0": "SDK 5 Graph example, explicit trace writers, standalone runner, validated JSONL and legacy log analysis."
+    },
+    "holoscan_sdk": {
+      "minimum_required_version": "5.0.0",
+      "tested_versions": [
+        "5.0.0"
+      ]
+    },
+    "platforms": [
+      "x86_64",
+      "aarch64"
+    ],
+    "tags": [
+      "Benchmarking"
+    ],
+    "ranking": 3,
+    "requirements": {
+      "python-requirements": [
+        {
+          "filepath": "requirements.txt"
+        }
+      ]
+    }
+  }
 }

@@ -1,6 +1,5 @@
 numpy
 matplotlib
-nvitop
 pydot
-PyGObject==3.50.0
-xdot
+# Optional: nvitop for benchmark.py --monitor_gpu.
+# Optional: Graphviz or xdot installed separately to view generated DOT files.

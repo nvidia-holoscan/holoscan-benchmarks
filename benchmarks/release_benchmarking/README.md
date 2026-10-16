@@ -1,5 +1,11 @@
 # Release Benchmarking Guide
 
+> Historical report scenarios below target SDK 1–4. New collection uses SDK 5.0.0
+> explicit Graph instrumentation and `benchmark.py --run-command`; the old
+> scheduler/patching-based collection functions have been removed.
+> Use the [SDK 5 flow guide](../../benchmark_tools/flow_benchmarking/README.md)
+> for new measurements. Historical analysis and reporting remain available.
+
 This tutorial provides a reproducible workflow for developers to accurately measure the latency of curated HoloHub
 applications across various SDK releases and different deployment scenarios, from single-application
 to multi-model use cases.
@@ -54,27 +60,16 @@ definitions and background
 
 ## Running Benchmarks: Getting Started
 
-Data collection can be run in the HoloHub base container for both the Endoscopy Tool Tracking and the Multi-AI Ultrasound applications. We've provided a custom Dockerfile with tools to process collected data into a benchmark report.
+For SDK 5 measurements, follow the [flow tracking guide](../../benchmark_tools/flow_benchmarking/README.md).
+It includes an instrumented Graph example and the explicit `benchmark.py --run-command`
+runner. Configure each application's inputs, scheduling, and termination in its
+normal SDK environment.
 
-```bash
-# Build and launch the container
-./holohub run-container \
-    --img holohub:release_benchmarking \
-    --docker-file benchmarks/release_benchmarking/Dockerfile \
-    --base-img nvcr.io/nvidia/clara-holoscan/holoscan:<holoscan-sdk-version-gpu>
-
-# Inside the container, build the applications in benchmarking mode
-./holohub build endoscopy_tool_tracking --benchmark --language=cpp
-./holohub build multiai_ultrasound --benchmark --language=cpp
-
-./holohub build release_benchmarking
-```
-
-Run the benchmarking script with no arguments to collect performance logs in the `./output` directory.
-
-```bash
-./holohub run release_benchmarking --no-local-build
-```
+The SDK 1–4 automatic collection functions have been removed from
+`run_benchmarks.sh`; running it without `--process` now prints migration instructions
+before touching application configurations. The historical reporting commands
+below remain available for previously collected logs. To reproduce historical
+collection procedures, use the matching repository revision and SDK release.
 
 ## Summarizing Data
 
@@ -87,11 +82,8 @@ After running benchmarks, inside the dev environment, use `./holohub run` to pro
 
 Alternatively, collect results across platforms. On each machine:
 
-1. Run benchmarks:
-
-```bash
-./holohub run release_benchmarking --no-local-build
-```
+1. Collect logs with the SDK 5 flow guide, or obtain existing historical results.
+The report templates below expect the historical scenario directory layout.
 
 1. Add platform configuration information:
 
@@ -165,14 +157,6 @@ The Holoscan SDK team may submit release benchmarking reports to HoloHub git his
 1. Move `<release-version>.md` and accompanying plots to a new `release/<version>` folder.
 2. Update image paths in `<release-version.md>` and verify locally with a markdown renderer such as VS Code.
 3. Commit changes, push to GitHub, and open a Pull Request.
-
-## Cleanup
-
-Benchmarking changes to application YAML files can be discarded after benchmarks complete.
-
-```bash
-git checkout applications/*.yaml
-```
 
 ## Troubleshooting
 

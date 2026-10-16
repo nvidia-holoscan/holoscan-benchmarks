@@ -51,98 +51,6 @@ print_platform_details() {
     echo "\"os\": \"$(cat /etc/os-release | grep "PRETTY_NAME" | cut -d'"' -f2)\","
 }
 
-run_benchmark() {
-    ARGS=("$@")
-    local runs=3
-    local instances=3
-    local messages=1000
-    local scheduler=greedy
-    local output=""
-    local headless="false"
-    local realtime="false"
-    local headless_str="display"
-    local realtime_str="offline"
-    local app_config=""
-    local app=""
-
-    for i in "${!ARGS[@]}"; do
-        arg="${ARGS[i]}"
-        if [[ $skipnext == "1" ]]; then
-            skipnext=0
-        elif [[ "$arg" == "--help" ]]; then
-            echo "Usage: $0 [options]"
-            echo "Options:"
-            echo "  --app <str>         Application to benchmark"
-            echo "  --app_config <str>  Application configuration file"
-            echo "  --runs <int>        Number of runs"
-            echo "  --instances <int>   Number of instances"
-            echo "  --messages <int>    Number of messages"
-            echo "  --scheduler <str>   Scheduler to use"
-            echo "  --output <str>      Output directory"
-            echo "  --headless          Run in headless mode"
-            echo "  --realtime          Run in real-time mode"
-            exit 0
-        elif [ "$arg" = "--app" ]; then
-            app="${ARGS[i + 1]}"
-            skipnext=1
-        elif [ "$arg" = "--app_config" ]; then
-            app_config="${ARGS[i + 1]}"
-            skipnext=1
-        elif [ "$arg" = "--runs" ]; then
-            runs="${ARGS[i + 1]}"
-            skipnext=1
-        elif [ "$arg" = "--instances" ]; then
-            instances="${ARGS[i + 1]}"
-            skipnext=1
-        elif [ "$arg" = "--messages" ]; then
-            messages="${ARGS[i + 1]}"
-            skipnext=1
-        elif [ "$arg" = "--scheduler" ]; then
-            scheduler="${ARGS[i + 1]}"
-            skipnext=1
-        elif [ "$arg" = "--output" ]; then
-            output="${ARGS[i + 1]}"
-            skipnext=1
-        elif [ "$arg" = "--headless" ]; then
-            headless="true"
-        elif [ "$arg" = "--realtime" ]; then
-            realtime="true"
-        fi
-    done
-
-    if [[ -z "${app_config}" || ! -f "${app_config}" ]]; then
-        echo "No application configuration filepath specified with '--app_config'"
-        exit 1
-    fi
-
-    if [[ "${headless}" = "true" ]]; then
-        headless_str="headless"
-    fi
-    if [[ "${realtime}" = "true" ]]; then
-        realtime_str="realtime"
-    fi
-
-    if [[ "${messages}" = "100000" ]]; then
-        output=${output:-"${SCRIPT_DIR}/output/long_running_${app}_${runs}_${instances}_${scheduler}_${headless_str}_${realtime_str}"}
-    else
-        output=${output:-"${SCRIPT_DIR}/output/${app}_${runs}_${instances}_${messages}_${scheduler}_${headless_str}_${realtime_str}"}
-    fi
-
-    mkdir -p $(dirname ${output})
-
-    sed -i "s/^  headless: .*/  headless: ${headless}/" ${APP_CONFIG_PATH}
-    sed -i "s/^  realtime: .*/  realtime: ${realtime}/" ${APP_CONFIG_PATH}
-
-    run_command python \
-        ${FLOW_BENCHMARKING_DIR}/benchmark.py \
-        -a ${app} \
-        -r ${runs} \
-        -i ${instances} \
-        -m ${messages} \
-        --sched ${scheduler} \
-        -d ${output}
-}
-
 plot_benchmark() {
     ARGS=("$@")
     local statistics_args="--max --avg --stddev --median --min --tail --flatness -p 90 95 99 99.9"
@@ -216,82 +124,6 @@ plot_benchmark() {
     popd
 }
 
-benchmark_endoscopy_tool_tracking() {
-    APP_CONFIG_PATH=${TOP}/build/endoscopy_tool_tracking/applications/endoscopy_tool_tracking/cpp/endoscopy_tool_tracking.yaml
-
-    # Test fewer instances on IGX
-    if [ $(uname -m) = "aarch64" ]; then
-        instance_range=$(seq 1 3);
-    else
-        instance_range=$(seq 1 8);
-    fi
-
-    # Real time
-    for instances in ${instance_range}; do
-        run_benchmark \
-            --app endoscopy_tool_tracking \
-            --app_config ${APP_CONFIG_PATH} \
-            --instances ${instances} \
-            --realtime
-    done
-
-    # Real time disabled ("offline")
-    for instances in ${instance_range}; do
-        run_benchmark \
-            --app endoscopy_tool_tracking \
-            --app_config ${APP_CONFIG_PATH} \
-            --instances ${instances}
-    done
-
-    # Real time disabled ("offline") + visualizations disabled ("headless")
-    for instances in ${instance_range}; do
-        run_benchmark \
-            --app endoscopy_tool_tracking \
-            --app_config ${APP_CONFIG_PATH} \
-            --instances ${instances} \
-            --headless
-    done
-
-    # Long-running + Real time
-    for instances in $(seq 1 2); do
-        run_benchmark \
-            --app endoscopy_tool_tracking \
-            --app_config ${APP_CONFIG_PATH} \
-            --instances ${instances} \
-            --realtime \
-            --messages 100000
-    done
-}
-
-benchmark_multiai_ultrasound() {
-    APP_CONFIG_PATH=${TOP}/build/multiai_ultrasound/applications/multiai_ultrasound/cpp/multiai_ultrasound.yaml
-
-    # Test fewer instances on IGX
-    if [ $(uname -m) = "aarch64" ]; then
-        instance_range=$(seq 1 2);
-    else
-        instance_range=$(seq 1 3);
-    fi
-
-    # Real time
-    for instances in ${instance_range}; do
-        run_benchmark \
-            --app multiai_ultrasound \
-            --app_config ${APP_CONFIG_PATH} \
-            --instances ${instances} \
-            --realtime
-    done
-
-    # Real time disabled + visualizations disabled
-    for instances in ${instance_range}; do
-        run_benchmark \
-            --app multiai_ultrasound \
-            --app_config ${APP_CONFIG_PATH} \
-            --instances ${instances} \
-            --headless
-    done
-}
-
 main() {
     ARGS=("$@")
     local process_only=false
@@ -326,10 +158,10 @@ main() {
     fi
 
     if [[ ${process_only} = "false" ]]; then
-        pushd ${TOP}
-        benchmark_endoscopy_tool_tracking
-        benchmark_multiai_ultrasound
-        popd;
+        echo "SDK 1–4 automatic collection has been retired." >&2
+        echo "For SDK 5, use benchmark_tools/flow_benchmarking/benchmark.py --run-command with an instrumented application." >&2
+        echo "To process historical results, pass --process <directory>." >&2
+        return 2
     fi
 
     for data_dir in ${data_dirs[@]}; do

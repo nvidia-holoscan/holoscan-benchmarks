@@ -1,77 +1,113 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Read versioned SDK 5 flow records and legacy SDK 1–4 timestamp logs."""
+
+from dataclasses import dataclass
+import json
+import re
+
+
+@dataclass(frozen=True)
+class FlowRecord:
+    message_id: int | None
+    path: tuple  # (operator, start_ns, end_ns), in traversal order
+
+    @property
+    def latency_ms(self):
+        return (self.path[-1][2] - self.path[0][1]) / 1_000_000
+
+    @property
+    def path_name(self):
+        # Escape the delimiter and the escape character so different topologies
+        # cannot collapse to one analysis group when a name contains an arrow.
+        return "→ ".join(hop[0].replace("\\", "\\\\").replace("→", r"\u2192")
+                         for hop in self.path)
 
 
 def parse_line_from_log(line):
-    operators = line.split("->")
-    # print (operators)
-    op_timestamps = []
-    for operator in operators:
-        # trim whitespaces for left and right side
-        # print ("op: ", operator)
-        op_name_timestamp = operator.strip().rstrip()[1:-1]
-        op_timestamps.append(op_name_timestamp.split(","))
-    return op_timestamps
+    """Legacy API: return operator names and microsecond timestamp strings."""
+    result = []
+    for operator in line.strip().split("->"):
+        match = re.fullmatch(r"\s*\(([^,()]+),\s*(\d+),\s*(\d+)\)\s*", operator)
+        if not match:
+            raise ValueError("invalid legacy operator timestamp tuple")
+        name, start, end = match.groups()
+        result.append([name.strip(), start, end])
+    return result
 
 
-# return a path and latency pair where a path is string of operators separated by path_separator
 def get_path_latency(op_timestamps, path_separator="→ "):
-    operators = []
-    latency = 0
-    for op_timestamp in op_timestamps:
-        operators.append(op_timestamp[0])
-    # convert the latency to ms
-    latency = float(int(op_timestamps[-1][2]) - int(op_timestamps[0][1])) / 1000.0
-    path = path_separator.join(operators)
-    return path, latency
+    return (path_separator.join(op[0] for op in op_timestamps),
+            (int(op_timestamps[-1][2]) - int(op_timestamps[0][1])) / 1000)
 
 
 def is_same_path(line1, line2):
-    if line1 == line2:
-        return True
-    if line1 == "" or line2 == "":
+    """Only exact timestamp tuples are duplicates; nearby times are distinct."""
+    if not line1.strip() or not line2.strip():
         return False
-    op_timestamps1 = parse_line_from_log(line1)
-    op_timestamps2 = parse_line_from_log(line2)
-    path1, _latency1 = get_path_latency(op_timestamps1)
-    path2, _latency2 = get_path_latency(op_timestamps2)
-    if path1 != path2:
-        return False
-    # if receive or publish timestamps of the source are not same, then they are different paths
-    if op_timestamps1[0][1] != op_timestamps2[0][1] or op_timestamps1[0][2] != op_timestamps2[0][2]:
-        return False
-    # if the publish timestamps of the sinks are within 20 nanoseconds, then they are considered same path
-    # If none of the above is true, they are the same path when sink timestamps are close.
-    return abs(int(op_timestamps1[-1][2]) - int(op_timestamps2[-1][2])) <= 20
+    return parse_line_from_log(line1) == parse_line_from_log(line2)
 
 
-# parse the log file and return all the latencies for each path
-# The format is (Operator1, receive timestamp, publish timestsamp) -> (Operator2, receive timestamp,
-# publish timestsamp) -> ... -> (OperatorN, receive timestamp, publish timestsamp)
+def parse_record(line):
+    line = line.strip()
+    if line.startswith("{"):
+        data = json.loads(line)
+        if data.get("version") != 1 or data.get("unit") != "ns" or data.get("clock") != "monotonic":
+            raise ValueError("expected flow version=1, unit=ns, clock=monotonic")
+        identity = data.get("message_id")
+        if type(identity) is not int or not 0 <= identity < 2**64:
+            raise ValueError("invalid message_id")
+        raw_path = data.get("path")
+        if not isinstance(raw_path, list) or not raw_path:
+            raise ValueError("path must be a nonempty list")
+        path = []
+        for hop in raw_path:
+            if not isinstance(hop, list) or len(hop) != 3:
+                raise ValueError("expected [operator, start_ns, end_ns]")
+            path.append(tuple(hop))
+    elif line.startswith("("):
+        identity = None
+        path = [(name, int(start) * 1000, int(end) * 1000)
+                for name, start, end in parse_line_from_log(line)]
+    else:
+        return None  # blank lines, comments, SDK status output
+    previous_end = 0
+    for name, start, end in path:
+        if not isinstance(name, str) or not name or any(ord(c) < 32 for c in name):
+            raise ValueError("invalid operator name")
+        if type(start) is not int or type(end) is not int or not 0 <= start <= end < 2**63:
+            raise ValueError("invalid operator timestamps")
+        if identity is not None and start < previous_end:
+            raise ValueError("operator starts before its predecessor ends")
+        previous_end = end
+    return FlowRecord(identity, tuple(path))
+
+
+def iter_flow_records(log_file, *, live=False):
+    """Yield records with useful errors; defer an incomplete final live line.
+
+    New records retain every message, including identical timestamps with distinct
+    IDs. Only consecutive exact legacy duplicates are suppressed for old SDK logs.
+    """
+    previous = None
+    with open(log_file, encoding="utf-8") as stream:
+        for number, line in enumerate(stream, 1):
+            if live and not line.endswith("\n"):
+                break
+            try:
+                record = parse_record(line)
+            except (ValueError, TypeError, KeyError) as error:
+                raise ValueError(f"{log_file}:{number}: {error}") from error
+            if record is None:
+                continue
+            if record.message_id is None and record == previous:
+                continue
+            previous = record
+            yield record
+
+
 def parse_log_as_paths_latencies(log_file):
-    with open(log_file, "r") as f:
-        paths_latencies = {}
-        last_line = ""
-        for line in f:
-            if line[0] == "(":
-                path_latency = get_path_latency(parse_line_from_log(line))
-                if is_same_path(last_line, line):
-                    continue
-                if path_latency[0] in paths_latencies:
-                    paths_latencies[path_latency[0]].append(path_latency[1])
-                else:
-                    paths_latencies[path_latency[0]] = [path_latency[1]]
-                last_line = line
-        return paths_latencies
+    paths = {}
+    for record in iter_flow_records(log_file):
+        paths.setdefault(record.path_name, []).append(record.latency_ms)
+    return paths

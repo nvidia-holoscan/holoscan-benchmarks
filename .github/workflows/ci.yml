@@ -25,5 +25,7 @@ jobs:
           python-version: "3.12"
       - name: Check Python, JSON, and shell syntax
         run: python .github/scripts/check.py
-      - name: Test flow-log parsing
+      - name: Install analysis dependencies
+        run: python -m pip install -r benchmark_tools/flow_benchmarking/requirements.txt
+      - name: Test flow collection and analysis
         run: python -m unittest discover -s benchmark_tools/flow_benchmarking/tests -v

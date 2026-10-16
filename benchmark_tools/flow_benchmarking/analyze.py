@@ -14,6 +14,8 @@
 # limitations under the License.
 
 import argparse
+import csv
+from pathlib import Path
 import sys
 
 import matplotlib
@@ -39,6 +41,8 @@ index = 0
 
 # This function merges the latencies of the same path from different log files
 def merge_path_latencies(multiple_path_latencies, skip_begin_messages=10, discard_last_messages=10):
+    if skip_begin_messages < 0 or discard_last_messages < 0:
+        raise ValueError("sample exclusions must be nonnegative")
     merged_path_latencies = {}
     for path_latencies in multiple_path_latencies:
         for path, latencies in path_latencies.items():
@@ -60,13 +64,41 @@ def merge_path_latencies(multiple_path_latencies, skip_begin_messages=10, discar
     return merged_path_latencies
 
 
+def group_files(groups, name_prefix):
+    """Assign unique group names after reserving every explicit name."""
+    parsed_groups = []
+    explicit_names = set()
+    for group in groups:
+        if Path(group[-1]).is_file() or Path(group[-1]).suffix in (".log", ".jsonl", ".csv"):
+            name, files = None, group
+        else:
+            name, files = group[-1], group[:-1]
+            if name in explicit_names:
+                raise ValueError(f"duplicate group name: {name}")
+            explicit_names.add(name)
+        if not files:
+            raise ValueError(f"no files provided for group: {name}")
+        parsed_groups.append((name, files))
+
+    grouped_files = {}
+    counter = 1
+    for name, files in parsed_groups:
+        if name is None:
+            while f"{name_prefix}{counter}" in explicit_names:
+                counter += 1
+            name = f"{name_prefix}{counter}"
+            counter += 1
+        grouped_files[name] = files
+    return grouped_files
+
+
 # Creates a CDF from the provided latencies
 def get_cdf_data(latencies):
     data = sorted(latencies)
     n = len(data)
     p = []
     for i in range(n):
-        p.append(i / n)
+        p.append((i + 1) / n)
     return data, p
 
 
@@ -128,6 +160,8 @@ def complete_cdf_plot(fig, ax, operator_legends=None):
 
 
 def latency_percentile(latencies, percentile, is_sorted=False):
+    if not 0 <= percentile <= 100:
+        raise ValueError("percentile must be between 0 and 100")
     if not is_sorted:
         latencies = sorted(latencies)
     if percentile == 100:
@@ -143,22 +177,21 @@ def get_latency_difference(latencies, percentile_start, percentile_end):
     return f"{end_value - start_value:.2f}"
 
 
-# This function shortens a path by taking first 3 letters of each operator name if
-# it's more than 3 letters long
+# Use three-letter abbreviations when available, falling back to full operator names.
 def shorten_path(path, operator_legends, path_separator="→ "):
     operators = path.split(path_separator)
     modified_operators = []
     for operator in operators:
         modified_operator_name = operator[:3] if len(operator) > 3 else operator
-        if modified_operator_name not in operator_legends:
-            operator_legends[modified_operator_name] = operator
-        else:
-            if operator_legends[modified_operator_name] != operator:
-                print(f"\033[91mERROR: Operator {operator} has the same first 3 letters\
-                      as {operator_legends[modified_operator_name]}\033[0m")
-                print("\033[91mCDF Curve legends for operators cannot be created. \
-                    CDF Curve creation aborted.\033[0m")
-                sys.exit(1)
+        if (modified_operator_name in operator_legends
+                and operator_legends[modified_operator_name] != operator):
+            modified_operator_name = operator
+            suffix = 2
+            while (modified_operator_name in operator_legends
+                   and operator_legends[modified_operator_name] != operator):
+                modified_operator_name = f"{operator} ({suffix})"
+                suffix += 1
+        operator_legends[modified_operator_name] = operator
         modified_operators.append(modified_operator_name)
     return path_separator.join(modified_operators)
 
@@ -324,39 +357,48 @@ def main():
         required=True,
     )
 
+    parser.add_argument("--skip-begin", type=int, default=10,
+                        help="warmup samples excluded per file/path (default: 10)")
+    parser.add_argument("--discard-last", type=int, default=10,
+                        help="tail samples excluded per file/path (default: 10)")
+    parser.add_argument("--output-csv", type=Path,
+                        help="write one summary row per group/path, including sample counts")
     args = parser.parse_args()
+    if args.skip_begin < 0 or args.discard_last < 0:
+        parser.error("sample exclusions must be nonnegative")
+    if args.percentile and any(not 0 <= float(p) <= 100 for p in args.percentile):
+        parser.error("percentile must be between 0 and 100")
 
     # Tell CTest to send the full output to CDash
     if args.cdash:
         print("CTEST_FULL_OUTPUT")
 
-    # Group the log files and parse the latencies from the log files
-    group_name = "Group"
-    group_name_counter = 1
-
+    # Validate all group names before reading files or writing any results.
+    grouped_log_files = group_files(args.group_log_files, "Group")
+    grouped_gpu_util_log_files = group_files(args.group_utilization_files or [], "UGroup")
     grouped_path_latencies = {}
-    grouped_log_files = {}
-    for group in args.group_log_files:
-        # check whether the last entry has a dot in it, then it does not have a group name
-        current_group_name = ""
-        current_log_files = []
-        if group[-1].find(".") != -1:
-            current_group_name = group_name + str(group_name_counter)
-            group_name_counter += 1
-            current_log_files = group
-        else:
-            current_group_name = group[-1]
-            current_log_files = group[:-1]
-        if len(current_log_files) == 0:
-            print(
-                "\033[91mError: No log files provided for group: " + current_group_name + "\033[0m"
-            )
-            sys.exit(1)
+    for current_group_name, current_log_files in grouped_log_files.items():
         parsed_latencies_per_file = []
         for log_file in current_log_files:
             parsed_latencies_per_file.append(parse_log_as_paths_latencies(log_file))
-        grouped_path_latencies[current_group_name] = merge_path_latencies(parsed_latencies_per_file)
-        grouped_log_files[current_group_name] = current_log_files
+        grouped_path_latencies[current_group_name] = merge_path_latencies(
+            parsed_latencies_per_file, args.skip_begin, args.discard_last)
+
+    if not any(values for paths in grouped_path_latencies.values() for values in paths.values()):
+        parser.error("no flow samples remain; check logs or lower --skip-begin/--discard-last")
+    if args.output_csv:
+        with args.output_csv.open("w", newline="", encoding="utf-8") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(["group", "path", "count", "avg_ms", "min_ms", "max_ms",
+                             "median_ms", "stddev_ms", "p95_ms", "p99_ms"])
+            for group, paths in grouped_path_latencies.items():
+                for path, values in paths.items():
+                    if values:
+                        writer.writerow([group, path, len(values), np.mean(values), min(values),
+                                         max(values), np.median(values), np.std(values),
+                                         latency_percentile(values, 95), latency_percentile(values, 99)])
+                    else:
+                        writer.writerow([group, path, 0, "", "", "", "", "", "", ""])
 
     if args.max:
         if args.save_csv:
@@ -651,37 +693,19 @@ def main():
 
     if args.group_utilization_files:
         # combine the GPU utilization files the same way as done for log files
-        util_groups = args.group_utilization_files
-        util_group_name = "UGroup"
-        util_group_name_counter = 1
         grouped_gpu_util = {}
-        grouped_gpu_util_log_files = {}
-        for group in util_groups:
-            current_util_group_name = ""
-            current_gpu_util_files = []
-            if group[-1].find(".") != -1:
-                current_util_group_name = util_group_name + str(util_group_name_counter)
-                util_group_name_counter += 1
-                current_gpu_util_files = group
-            else:
-                current_util_group_name = group[-1]
-                current_gpu_util_files = group[:-1]
-            if len(current_gpu_util_files) == 0:
-                print(
-                    "\033[91mError: No GPU utilization files provided for group: "
-                    + current_util_group_name
-                    + "\033[0m"
-                )
-                sys.exit(1)
+        for current_util_group_name, current_gpu_util_files in grouped_gpu_util_log_files.items():
             parsed_gpu_utils = []
             for gpu_util_file in current_gpu_util_files:
                 with open(gpu_util_file, "r") as f:
                     all_utils = f.readlines()
                     for lines in all_utils:
                         for value in lines.strip().split(","):
-                            parsed_gpu_utils.append(float(value))
+                            if value.strip():
+                                parsed_gpu_utils.append(float(value))
+            if not parsed_gpu_utils:
+                parser.error(f"no GPU utilization samples for {current_util_group_name}")
             grouped_gpu_util[current_util_group_name] = parsed_gpu_utils
-            grouped_gpu_util_log_files[current_util_group_name] = current_gpu_util_files
         if args.save_csv:
             with open("avg_gpu_utilization_values.csv", "w") as f:
                 f.truncate(0)
@@ -695,4 +719,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (OSError, ValueError) as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)

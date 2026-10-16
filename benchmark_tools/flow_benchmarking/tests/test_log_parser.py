@@ -31,9 +31,9 @@ class LogParserTests(unittest.TestCase):
             ("source/middle/sink", 4.0),
         )
 
-    def test_duplicate_sink_timestamp_tolerance(self):
+    def test_duplicate_sink_timestamps_must_match_exactly(self):
         original = "(source,1000,1100) -> (sink,2000,3000)"
-        for timestamp, expected in ((2980, True), (3020, True), (2979, False), (3021, False)):
+        for timestamp, expected in ((3000, True), (2980, False), (3020, False), (3021, False)):
             with self.subTest(timestamp=timestamp):
                 other = f"(source,1000,1100) -> (sink,2000,{timestamp})"
                 self.assertEqual(log_parser.is_same_path(original, other), expected)
@@ -64,7 +64,7 @@ class LogParserTests(unittest.TestCase):
             path.write_text(contents, encoding="utf-8")
             self.assertEqual(
                 log_parser.parse_log_as_paths_latencies(path),
-                {"source→ sink": [2.0, 3.0], "source→ other_sink": [4.0]},
+                {"source→ sink": [2.0, 2.02, 3.0], "source→ other_sink": [4.0]},
             )
 
     def test_empty_log(self):
