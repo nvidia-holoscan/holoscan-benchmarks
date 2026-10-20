@@ -17,7 +17,7 @@ Other contributions have a different home:
 - Applications go to Holoscan Applications (`nvidia-holoscan/holoscan-applications`).
 - Tutorials go to Holoscan Tutorials (`nvidia-holoscan/holoscan-tutorials`).
 - Reusable operators and Holoscan Modules go to
-  their own project repositories. See the [Create a Module tutorial](https://nvidia-holoscan.github.io/holohub/tutorials/holoscan-modules/create-a-module/).
+  their own project repositories. See the [Create a Module tutorial](https://github.com/nvidia-holoscan/holoscan-tutorials/tree/main/tutorials/holoscan-modules/create-a-module).
 - Holoscan CLI changes go to [Holoscan CLI](https://github.com/nvidia-holoscan/holoscan-cli).
 - SDK bugs and feature requests go to the
   [Holoscan SDK](https://github.com/nvidia-holoscan/holoscan-sdk/issues).
