@@ -1,14 +1,14 @@
 # Flow benchmarking for Holoscan SDK 5.0.0
 
 Collect per-message host timings, run repeated trials, and analyze every recorded
-path. The SDK 5 integration uses `Graph`, typed ports, `compile()`, and
-`RunSession`. It does not depend on the removed SDK 4 `Application`,
+path. The Holoscan SDK 5 integration uses `Graph`, typed ports, `compile()`, and
+`RunSession`. It does not depend on the removed Holoscan SDK 4 `Application`,
 `CountCondition`, scheduler classes, or `Application.track()` APIs.
 
 ## Quick start
 
-From this repository's root, in an SDK 5.0.0 development environment with CMake
-4+, a C++20 compiler, and the SDK's runtime dependencies:
+From this repository's root, in a Holoscan SDK 5.0.0 development environment with CMake
+4+, a C++20 compiler, and the Holoscan SDK's runtime dependencies:
 
 ```bash
 cmake -S benchmark_tools/flow_benchmarking/examples \
@@ -29,9 +29,9 @@ python3 benchmark_tools/flow_benchmarking/app_perf_graph.py \
 ```
 
 Use a **new output directory** for each invocation. The runner refuses existing
-trial artifacts. If the SDK libraries are outside the loader's search path,
+trial artifacts. If the Holoscan SDK libraries are outside the loader's search path,
 add its `lib` directory to `LD_LIBRARY_PATH`. No GPU computation, models, video,
-HoloHub checkout, or display is used by this example; the SDK itself may require
+HoloHub checkout, or display is used by this example; the Holoscan SDK itself may require
 CUDA runtime libraries.
 
 The [tensor example](examples/tensor_flow_tracking.cpp) sends host tensors through
@@ -40,9 +40,9 @@ the input's trace/frame/capture metadata, and the aligned join checks both input
 Each completed frame produces two source-to-join paths. The graph uses bounded
 blocking queues; it fails on incomplete frames, incorrect payloads, missing
 provenance, or leftover trace entries.
-Its graph name includes the process ID to isolate SDK tensor channel service
+Its graph name includes the process ID to isolate Holoscan SDK tensor channel service
 names between simultaneous instances. Give concurrent instances of your own
-graph distinct names when using the tested SDK build.
+graph distinct names when using the tested Holoscan SDK build.
 
 The smaller [scalar example](examples/flow_tracking.cpp) sends integer IDs through
 `source → work → sink`. Application-owned state associates each ID with its
@@ -57,10 +57,10 @@ their work with your application's workload for performance measurements.
 ### Instrument explicit boundaries
 
 Use [flow_tracking.hpp](flow_tracking.hpp) in C++ or
-[flow_tracking.py](flow_tracking.py) in Python. They are small SDK-independent
+[flow_tracking.py](flow_tracking.py) in Python. They are small Holoscan SDK-independent
 writers, not automatic instrumentation of arbitrary operators. The C++ examples
-provide SDK graph integration. The Python writer can be used from your
-application's callbacks; it does not provide or emulate SDK Python bindings.
+provide Holoscan SDK graph integration. The Python writer can be used from your
+application's callbacks; it does not provide or emulate Holoscan SDK Python bindings.
 
 1. Assign a unique unsigned 64-bit ID to each source message within a run.
 2. Record `now_ns()` when work starts in an operator.
@@ -68,7 +68,7 @@ application's callbacks; it does not provide or emulate SDK Python bindings.
    before publication (at the sink, after consuming/processing the message).
 4. Preserve the trace across each edge. Carry it in application metadata or
    correlate it through a bounded, synchronized application-owned ID table.
-   `FlowTrace` is **not** itself a registered SDK port payload.
+   `FlowTrace` is **not** itself a registered Holoscan SDK port payload.
 5. Write the completed trace at each sink; stop/join all callbacks before closing
    the writer. A failed log write must fail the measurement.
 
@@ -101,8 +101,8 @@ multiple message traces in one callback. Retire correlation entries for dropped
 messages and bound outstanding state; the example's single-path ID table removes
 each entry on receipt. The writer does not infer joins, drops, or paths.
 
-For SDK C++ tensor graphs, [sdk_flow_tracking.hpp](sdk_flow_tracking.hpp) provides
-`TraceRegistry(capacity)`, keyed by a nonzero SDK trace ID and an explicit branch
+For Holoscan SDK C++ tensor graphs, [sdk_flow_tracking.hpp](sdk_flow_tracking.hpp) provides
+`TraceRegistry(capacity)`, keyed by a nonzero Holoscan SDK trace ID and an explicit branch
 name. It rejects duplicate entries and capacity overflow; `take()` transfers a
 branch to its consumer and `retire()` removes a known dropped branch. Create one
 registry per run, copy provenance into every branch before publication, and take
@@ -118,12 +118,12 @@ payload transformation preserves correlation through fan-out and fan-in.
 
 ### Timing contract and limits
 
-- Records use process-local monotonic **nanoseconds**. Legacy SDK logs use
+- Records use process-local monotonic **nanoseconds**. Legacy Holoscan SDK logs use
   **microseconds**. All reported latencies are **milliseconds**.
 - Path latency is the last recorded end minus the first recorded start.
   Node timing is the explicitly instrumented interval; edge timing is the next
   start minus the previous end and includes queueing and scheduling delays.
-- These are host intervals, not exact SDK callback durations or GPU kernel
+- These are host intervals, not exact Holoscan SDK callback durations or GPU kernel
   durations. The example ends the source/work interval before `emit()` and the
   sink interval before log I/O. Timestamping, correlation, copying, flushing, and
   logging add overhead; some falls between the measured intervals. Record these
@@ -178,7 +178,7 @@ outside that process group must be managed separately by the application.
 Optional physical GPU monitoring: install `nvitop`, then add `--monitor_gpu`.
 Samples are written to `gpu_utilization_<run>.csv`; unavailable telemetry fails
 explicitly. Utilization is not per-process and includes other GPU workloads.
-No scheduler is substituted: configure execution policy in the SDK 5 graph.
+No scheduler is substituted: configure execution policy in the Holoscan SDK 5 graph.
 
 ## Analyze and visualize
 
@@ -220,25 +220,25 @@ snapshot leaves the last graph in place until new samples arrive.
 
 ## Migration and validation
 
-Removed the SDK 1–4 `BenchmarkedApplication` helpers and regex-based patch/restore
-scripts. They depended on APIs absent from SDK 5, rewrote source files, imposed
+Removed the Holoscan SDK 1–4 `BenchmarkedApplication` helpers and regex-based patch/restore
+scripts. They depended on APIs absent from Holoscan SDK 5, rewrote source files, imposed
 count conditions on intermediate operators, and changed application scheduling.
 The old `-a/--holohub-application`, `--sched`, `--language`, and worker-count runner
 options are replaced by an explicit `--run-command`. The historical release
-suite's collection recipes need SDK 5 workload instrumentation before reuse;
+suite's collection recipes need Holoscan SDK 5 workload instrumentation before reuse;
 existing log analysis and plotting remain supported.
 
-Validated on aarch64 using the local SDK package reporting 5.0.0, C++ Graph API,
-GCC 13.3, CUDA 13 runtime, and the SDK development container. Both examples passed
+Validated on aarch64 using the local Holoscan SDK package reporting 5.0.0, C++ Graph API,
+GCC 13.3, CUDA 13 runtime, and the Holoscan SDK development container. Both examples passed
 three runs of two simultaneous instances, with 1,000 frames per instance:
 6,000 scalar records and 12,000 tensor path records. CSV, CDF, and DOT generation
 passed, including exact retained counts (5,880 per path) and deduplication of
-shared source/join observations. All 33 CPU tests and four SDK integration tests
+shared source/join observations. All 33 CPU tests and four Holoscan SDK integration tests
 passed. The newer tensor-contract header branch was also syntax-checked; runtime
-validation used the installed SDK's tensor declaration API.
+validation used the installed Holoscan SDK's tensor declaration API.
 
 This validates host flow collection and analysis. GPU completion timing, full
-endoscopy/inference workloads, SDK Python graph integration, distributed clock
+endoscopy/inference workloads, Holoscan SDK Python graph integration, distributed clock
 correlation, and other application topologies have not been validated here.
 
 ```bash
@@ -249,8 +249,8 @@ python3 -m unittest discover -s benchmark_tools/flow_benchmarking/tests -v
 
 The CPU suite exercises both writers, branch copies, units, malformed logs,
 per-path trimming, graph statistics, subprocess failures/timeouts, and CSV export.
-The C++ writer test compiles with `g++`; runtime graph validation requires SDK 5.
-Run the SDK tests in the same SDK development environment used for the build:
+The C++ writer test compiles with `g++`; runtime graph validation requires Holoscan SDK 5.
+Run the Holoscan SDK tests in the same Holoscan SDK development environment used for the build:
 
 ```bash
 HOLOSCAN_SDK_PREFIX=/absolute/path/to/sdk-install \
@@ -261,4 +261,4 @@ HOLOSCAN_TENSOR_FLOW_EXECUTABLE="$PWD/build/flow-tracking/tensor_flow_tracking" 
 
 These compile the metadata/correlation helper and exercise tensor transformation,
 fan-out, aligned joining, four simultaneous instances, and the untracked baseline.
-Without these environment variables, SDK-dependent tests are explicitly skipped.
+Without these environment variables, Holoscan SDK-dependent tests are explicitly skipped.

@@ -25,9 +25,9 @@ security bulletin when appropriate.
 
 Security fixes are applied to the current `main` branch. The shared measurement
 and analysis tools target Holoscan SDK 5.x, using 5.0.0 as the baseline. Their
-C++ examples require SDK 5.0 or newer. The `benchmarks/` directory currently
+C++ examples require Holoscan SDK 5.0 or newer. The `benchmarks/` directory currently
 contains no runnable workloads; legacy benchmarks and release reports were
-removed during the SDK 5 compatibility review.
+removed during the Holoscan SDK 5 compatibility review.
 
 ## Security Architecture and Context
 
@@ -48,10 +48,10 @@ The principal security boundaries are:
   timeout, or cancellation. The application must honor the requested message
   limit and implement its own instrumentation.
 - `flow_tracking.hpp` and `flow_tracking.py` write application-provided timing
-  records to the selected file. The SDK integration examples and correlation
-  helper carry measurement provenance through SDK 5 graphs.
+  records to the selected file. The Holoscan SDK integration examples and correlation
+  helper carry measurement provenance through Holoscan SDK 5 graphs.
 - `log_parser.py`, `analyze.py`, and plotting tools read caller-selected logs
-  and write statistics, CSV, graph, and image files. Analysis accepts SDK 5
+  and write statistics, CSV, graph, and image files. Analysis accepts Holoscan SDK 5
   JSONL records and legacy flow logs.
 - With `--monitor_gpu`, `benchmark.py` samples physical GPU utilization through
   the optional `nvitop` package and NVML.
@@ -68,7 +68,7 @@ The principal security boundaries are:
    operate on local paths. Large or malformed input may consume memory or CPU;
    the tools do not authenticate log producers. Some analysis outputs may
    replace existing files at the selected destination.
-3. **GPU and process access:** Optional NVML monitoring and SDK applications use
+3. **GPU and process access:** Optional NVML monitoring and Holoscan SDK applications use
    the device access already granted to the invoking user or container. The
    runner can terminate the process groups it starts.
 

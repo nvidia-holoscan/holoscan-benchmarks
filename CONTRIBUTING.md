@@ -1,7 +1,7 @@
 # Contributing
 
-Contributions can add validated SDK 5.x benchmark workloads, improve shared
-tooling, or correct documentation. SDK 5.0.0 is the baseline.
+Contributions can add validated Holoscan SDK 5.x benchmark workloads, improve shared
+tooling, or correct documentation. Holoscan SDK 5.0.0 is the baseline.
 
 ## Where changes belong
 
@@ -19,7 +19,7 @@ Other contributions have a different home:
 - Reusable operators and Holoscan Modules go to
   their own project repositories. See the [Create a Module tutorial](https://github.com/nvidia-holoscan/holoscan-tutorials/tree/main/tutorials/holoscan-modules/create-a-module).
 - Holoscan CLI changes go to [Holoscan CLI](https://github.com/nvidia-holoscan/holoscan-cli).
-- SDK bugs and feature requests go to the
+- Holoscan SDK bugs and feature requests go to the
   [Holoscan SDK](https://github.com/nvidia-holoscan/holoscan-sdk/issues).
 
 ## Add or update a benchmark
@@ -31,14 +31,14 @@ You can use the tools on your own application before contributing it here.
 Include a README that explains:
 
 1. What is measured, the metric units, and the workload or operator configuration.
-2. Required hardware, SDK and software versions, permissions, models, and input
+2. Required hardware, Holoscan SDK and software versions, permissions, models, and input
    data, including how to obtain external dependencies.
 3. Exact build and run commands, their working directory, and where outputs go.
 4. How measurements are collected and analyzed, including warm-up exclusions,
    sample counts, repetitions, and any instrumentation overhead.
 5. How to interpret the results and reproduce the reported configuration.
 
-Use functionality present in SDK 5.x or Holoscan Applications. If the application
+Use functionality present in Holoscan SDK 5.x or Holoscan Applications. If the application
 source lives elsewhere, identify its repository and tested revision. Include
 hardware and software details with measurements. Build and run the benchmark
 and verify that its measurements are valid before registering it in
@@ -55,7 +55,7 @@ to results or command-line behavior.
 
 For behavior changes, add focused coverage to the relevant tests. Flow-log
 parser tests live in `benchmark_tools/flow_benchmarking/tests/` and run without
-the SDK or a GPU.
+the Holoscan SDK or a GPU.
 
 ## Validate and submit
 
@@ -72,7 +72,7 @@ affected benchmark in its required environment. CI does not validate GPU
 execution or performance.
 
 Open a pull request describing the change and the checks you ran. For runtime
-or result changes, include the tested hardware, SDK version, application
+or result changes, include the tested hardware, Holoscan SDK version, application
 revision, and commands. State which checks could not be run. A pull request is
 accepted once CI passes and a Holoscan maintainer approves it.
 
