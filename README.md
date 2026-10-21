@@ -1,7 +1,7 @@
 # Holoscan Benchmarks
 
 Measurement and analysis tools for
-[NVIDIA Holoscan SDK](https://github.com/nvidia-holoscan/holoscan-sdk) 5.x,
+[NVIDIA Holoscan SDK](https://github.com/nvidia-holoscan/holoscan-sdk),
 using Holoscan SDK 5.0.0 as the baseline. Use them to instrument applications, collect
 per-message timings, compare configurations, and analyze latency.
 
